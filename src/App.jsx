@@ -9,8 +9,7 @@ function App() {
   return (
     <div className="app">
       <div className="container">
-        <div className="shape1"></div>
-        <div className="shape2"></div>
+        
           <Form/>
            <MessageList/>
       </div>

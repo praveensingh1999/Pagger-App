@@ -1,29 +1,66 @@
-import axios from 'axios'
-import React, { useState,useEffect } from 'react'
+import axios from "axios";
+import React, { useState, useEffect, useRef } from "react";
 
 function MessageList() {
-    const [message, setmessage] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
 
-     const fetchmessage = async()=>{
-            const response = await axios.get("https://my-pagger-default-rtdb.asia-southeast1.firebasedatabase.app/praveen.json");
-             const messagesArray = Object.values(response.data);
-            setmessage(messagesArray)
-             
+  const fetchMessage = async () => {
+    try {
+      const response = await axios.get(
+        "https://my-pagger-default-rtdb.asia-southeast1.firebasedatabase.app/praveen.json"
+      );
+      if (response.data) {
+        const messagesArray = Object.values(response.data);
+        setMessages(messagesArray);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+
+  // 👇 Lazy load using IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+        } else {
+          setIsVisible(false);
         }
+      },
+      { threshold: 0.2 }
+    );
 
-        useEffect(() => {
-        fetchmessage();
-    }, []);
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // 👇 Fetch when visible, and keep updating every 5 seconds
+  useEffect(() => {
+    let intervalId;
+    if (isVisible) {
+      fetchMessage(); // initial fetch
+      intervalId = setInterval(fetchMessage, 5000); // re-fetch every 5s
+    }
+    return () => clearInterval(intervalId);
+  }, [isVisible]);
+
   return (
-    <div className="message-list">
-        
-       {message.map((msgObj) => {
-          return <div><p>{msgObj.name}</p> <p>{msgObj.message}</p></div>
-        })
-        }
-          
+    <div ref={ref} className="message-list">
+      {messages.length === 0 ? (
+        <p>Loading messages...</p>
+      ) : (
+        messages.map((msgObj, index) => (
+          <div key={index}>
+            <p><b>{msgObj.name}</b></p>
+            <p>{msgObj.message}</p>
+          </div>
+        ))
+      )}
     </div>
-  )
+  );
 }
 
-export default MessageList
+export default MessageList;
